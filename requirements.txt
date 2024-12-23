@@ -1,0 +1,7 @@
+Flask
+joblib
+numpy
+scikit-learn
+langid
+indic-nlp-library
+regex
