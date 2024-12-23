@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentiment Analysis</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <h1>Multi-Language Sentiment Analysis</h1>
+
+    <!-- Language Selection Dropdown -->
+    <div class="language-selection">
+      <label for="language">Select Language:</label>
+      <select id="language" name="language" required>
+        <option value="default" selected>--</option>
+        <option value="english">English</option>
+        <option value="hindi">Hindi</option>
+      </select>
+    </div>
+
+    <!-- Review Input Form -->
+    <form id="sentiment-form">
+      <label for="review">Enter your review:</label>
+      <textarea
+        id="review"
+        name="review"
+        placeholder="Type your review here..."
+        required
+      ></textarea>
+      <button type="submit">Analyze Sentiment</button>
+    </form>
+
+    <!-- Result Section -->
+    <div id="result" class="result hidden"></div>
+  </div>
+
+  <script>
+    document
+      .getElementById("sentiment-form")
+      .addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const review = document.getElementById("review").value;
+        const language = document.getElementById("language").value;
+
+        // Validate language selection
+        if (language === "default") {
+          alert("Please select a language before submitting.");
+          return;
+        }
+
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `text=${encodeURIComponent(review)}&language=${encodeURIComponent(language)}`,
+        });
+
+        const resultDiv = document.getElementById("result");
+        const data = await response.json();
+
+        if (data.error) {
+          resultDiv.textContent = `Error: ${data.error}`;
+          resultDiv.className = "result error";
+        } else {
+          let emoji = "";
+          if (data.sentiment === "Positive") emoji = "😊";
+          else if (data.sentiment === "Negative") emoji = "😢";
+          else if (data.sentiment === "Neutral") emoji = "😐";
+
+          resultDiv.innerHTML = `
+            <h2>Sentiment: ${data.sentiment} ${emoji}</h2>
+            <div class="probabilities">
+              <h3>Probabilities:</h3>
+              ${Object.entries(data.probabilities)
+                .map(
+                  ([key, value]) => `
+                  <div class="probability">
+                    <span>${key}:</span>
+                    <div class="progress">
+                      <div
+                        class="progress-bar"
+                        style="width: ${value}%;"
+                        aria-valuenow="${value}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      >
+                        ${value}%
+                      </div>
+                    </div>
+                  </div>
+                `
+                )
+                .join("")}
+            </div>
+          `;
+          resultDiv.className = "result success";
+        }
+
+        resultDiv.classList.remove("hidden");
+      });
+  </script>
+</body>
+</html>
